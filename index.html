@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#2B2B2B">
@@ -13,7 +16,7 @@ body {
   min-height: 100dvh;
   background: #F7F4EF;
   font-family: 'Hiragino Mincho ProN', 'Noto Serif SC', Georgia, serif;
-  padding-bottom: 72px;
+  padding-bottom: calc(72px + max(env(safe-area-inset-bottom), 16px));
 }
 
 /* NAV */
@@ -21,7 +24,7 @@ body {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
   background: #2B2B2B; display: flex;
   border-top: 1px solid #3A3A3A;
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: max(env(safe-area-inset-bottom), 16px);
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
 }
 #bottom-nav::-webkit-scrollbar { display: none; }
