@@ -609,17 +609,47 @@ function delTrackLog(itemId,logId){
   if(it)it.logs=it.logs.filter(l=>l.id!==logId);
   saveTrack();renderTrack();
 }
+function editTrackItem(id){
+  const it=trackItems.find(i=>i.id===id);if(!it)return;
+  it._editing=true;saveTrack();renderTrack();
+}
+function saveTrackEdit(id){
+  const it=trackItems.find(i=>i.id===id);if(!it)return;
+  const nameVal=document.getElementById(`te-name-${id}`).value.trim();
+  const freqVal=document.getElementById(`te-freq-${id}`).value.trim();
+  if(nameVal)it.name=nameVal;
+  it.freq=freqVal;
+  delete it._editing;saveTrack();renderTrack();
+}
+function cancelTrackEdit(id){
+  const it=trackItems.find(i=>i.id===id);if(!it)return;
+  delete it._editing;renderTrack();
+}
 function renderTrack(){
   const list=document.getElementById('track-list');
   if(!trackItems.length){list.innerHTML=`<div class="empty-msg">还没有追踪项 📅</div>`;return;}
   list.innerHTML=trackItems.map(it=>`
     <div class="card" style="border:1px solid #9DBFB044;margin-bottom:10px;">
-      <div style="display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid #F5F5F5;">
-        <div style="flex:1;">
-          <div style="font-size:15px;color:#2B2B2B;">${esc(it.name)}</div>
-          ${it.freq?`<div style="font-size:11px;color:#9DBFB0;margin-top:2px;">${esc(it.freq)}</div>`:''}
-        </div>
-        <button class="x-btn" onclick="delTrackItem(${it.id})">🗑</button>
+      <div style="padding:13px 14px;border-bottom:1px solid #F5F5F5;">
+        ${it._editing?`
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <input id="te-name-${it.id}" type="text" value="${esc(it.name)}"
+              style="width:100%;padding:7px 11px;border-radius:8px;border:1.5px solid #9DBFB0;font-size:14px;font-family:inherit;color:#333;outline:none;">
+            <input id="te-freq-${it.id}" type="text" value="${esc(it.freq||'')}" placeholder="频率，如「每半年」"
+              style="width:100%;padding:7px 11px;border-radius:8px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;">
+            <div style="display:flex;gap:6px;">
+              <button onclick="saveTrackEdit(${it.id})" style="flex:1;padding:7px;border-radius:8px;background:#9DBFB0;color:white;border:none;font-size:13px;cursor:pointer;font-family:inherit;">保存</button>
+              <button onclick="cancelTrackEdit(${it.id})" style="flex:1;padding:7px;border-radius:8px;background:#F0EBE3;color:#999;border:none;font-size:13px;cursor:pointer;font-family:inherit;">取消</button>
+            </div>
+          </div>`
+        :`<div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;">
+              <div style="font-size:15px;color:#2B2B2B;">${esc(it.name)}</div>
+              ${it.freq?`<div style="font-size:11px;color:#9DBFB0;margin-top:2px;">${esc(it.freq)}</div>`:''}
+            </div>
+            <button onclick="editTrackItem(${it.id})" style="background:none;border:none;color:#CCC;font-size:13px;cursor:pointer;padding:3px 5px;">✏️</button>
+            <button class="x-btn" onclick="delTrackItem(${it.id})">🗑</button>
+          </div>`}
       </div>
       ${it.logs.length?`
         <div style="padding:0 14px;">
