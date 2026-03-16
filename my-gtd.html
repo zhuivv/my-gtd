@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#2B2B2B">
+<title>My GTD</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  min-height: 100dvh;
+  background: #F7F4EF;
+  font-family: 'Hiragino Mincho ProN', 'Noto Serif SC', Georgia, serif;
+  padding-bottom: 72px;
+}
+
+/* NAV */
+#bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: #2B2B2B; display: flex;
+  border-top: 1px solid #3A3A3A;
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+#bottom-nav::-webkit-scrollbar { display: none; }
+.nav-btn {
+  flex: 0 0 70px; background: none; border: none; color: #555;
+  padding: 10px 4px 8px; cursor: pointer; font-family: inherit;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  transition: color 0.2s;
+}
+.nav-btn.active { color: #F0EBE3; }
+.nav-icon { font-size: 19px; line-height: 1; }
+.nav-label { font-size: 10px; letter-spacing: 0.5px; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── SHARED HEADER ── */
+.page-header {
+  background: #2B2B2B;
+  padding: 22px 18px 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.page-header h2 { color: #F0EBE3; font-size: 18px; font-weight: normal; letter-spacing: 1px; }
+.page-header .sub { color: #555; font-size: 11px; margin-top: 3px; letter-spacing: 0.5px; }
+.page-content { padding: 14px; }
+
+/* ── SHARED COMPONENTS ── */
+.add-bar {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.add-bar input {
+  flex: 1; padding: 11px 14px; border-radius: 10px;
+  border: 1.5px solid #E8E4DF; background: white;
+  font-size: 14px; font-family: inherit; color: #333; outline: none;
+}
+.add-bar input:focus { border-color: #C4A8C8; }
+.add-bar button {
+  padding: 11px 17px; border-radius: 10px;
+  background: #2B2B2B; color: white; border: none;
+  font-size: 20px; cursor: pointer; line-height: 1;
+}
+.card {
+  background: white; border-radius: 14px; margin-bottom: 10px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+}
+.row-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px; border-bottom: 1px solid #F5F5F5;
+}
+.row-item:last-child { border-bottom: none; }
+.tick {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid #DDD; background: white;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; transition: all 0.18s;
+}
+.row-text { flex: 1; font-size: 14px; color: #333; font-family: inherit; }
+.row-text.done { text-decoration: line-through; color: #C0C0C0; }
+.x-btn {
+  background: none; border: none; color: #D0D0D0;
+  font-size: 15px; cursor: pointer; padding: 3px 5px; flex-shrink: 0;
+}
+.x-btn:active { color: #E88; }
+.label-tag {
+  font-size: 11px; padding: 2px 8px; border-radius: 10px;
+  background: #F0EBE3; color: #AAA; white-space: nowrap; flex-shrink: 0;
+}
+.empty-msg { color: #CCC; font-size: 13px; text-align: center; padding: 24px 0; }
+.divider-label {
+  font-size: 10px; color: #BBB; letter-spacing: 2px;
+  text-transform: uppercase; margin: 14px 2px 8px;
+}
+.ghost-btn {
+  width: 100%; padding: 10px; background: none;
+  border: 1.5px dashed #DDD; border-radius: 10px;
+  color: #BBB; font-size: 12px; cursor: pointer;
+  margin-top: 6px; font-family: inherit; letter-spacing: 0.5px;
+}
+
+/* ── ROUTINE ── */
+#rtn-topbar {
+  background: #2B2B2B; padding: 20px 18px 16px;
+  position: sticky; top: 0; z-index: 50;
+}
+.rtn-toprow { display: flex; justify-content: space-between; align-items: center; }
+.rtn-label { font-size: 10px; color: #666; letter-spacing: 3px; margin-bottom: 3px; text-transform: uppercase; }
+.rtn-date { color: #F0EBE3; font-size: 15px; }
+#rtn-new-btn {
+  font-size: 11px; color: #888; background: #3A3A3A;
+  border: none; border-radius: 20px; padding: 7px 14px; cursor: pointer;
+}
+#rtn-prog-wrap { height: 3px; background: #3A3A3A; border-radius: 2px; overflow: hidden; margin-top: 14px; }
+#rtn-prog-bar { height: 100%; background: linear-gradient(90deg, #C4A8C8, #8DB09A); border-radius: 2px; width: 0%; transition: width 0.5s ease; }
+#rtn-prog-text { color: #555; font-size: 11px; margin-top: 5px; }
+#rtn-days { display: flex; gap: 4px; margin-top: 12px; }
+.day-pill { flex: 1; text-align: center; padding: 5px 2px; border-radius: 8px; font-size: 11px; color: #555; }
+.day-pill.today { background: #F0EBE3; color: #2B2B2B; font-weight: bold; }
+#rtn-sections { padding: 14px 14px 0; }
+.sec-card { margin-bottom: 10px; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 8px rgba(0,0,0,0.07); background: white; }
+.sec-hdr {
+  width: 100%; background: white; border: none;
+  padding: 13px 16px; display: flex; align-items: center;
+  cursor: pointer; gap: 10px; border-left: 4px solid #ccc;
+}
+.sec-emoji { font-size: 20px; }
+.sec-title { flex: 1; font-size: 15px; color: #2B2B2B; text-align: left; font-family: inherit; }
+.sec-badge { font-size: 12px; padding: 2px 9px; border-radius: 12px; background: #EEE; color: #999; transition: all 0.3s; }
+.sec-badge.full { color: white; }
+.sec-body { display: none; }
+.sec-body.open { display: block; }
+.rtn-item { border-top: 1px solid #F5F5F5; padding: 11px 14px 11px 18px; }
+.rtn-top { display: flex; align-items: center; gap: 8px; }
+.rtn-top.has-days { margin-bottom: 9px; }
+.rtn-check {
+  width: 22px; height: 22px; border-radius: 6px; flex-shrink: 0;
+  border: 2px solid #DDD; background: white;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 12px; color: white; transition: all 0.18s;
+}
+.rtn-lbl { font-size: 14px; flex: 1; color: #333; font-family: inherit; }
+.rtn-lbl.done { color: #C0C0C0; text-decoration: line-through; }
+.rtn-freq { font-size: 11px; opacity: 0.75; white-space: nowrap; }
+.day-btns { display: flex; gap: 5px; }
+.day-btn {
+  flex: 1; padding: 6px 0; border-radius: 8px;
+  border: 1.5px solid #EEE; background: #FAFAFA;
+  color: #C0C0C0; font-size: 11px; cursor: pointer;
+  transition: all 0.15s; font-family: inherit;
+}
+.footer-note { text-align: center; color: #CCC; font-size: 11px; margin-top: 16px; padding-bottom: 4px; }
+
+/* ── PACKING trip header ── */
+.trip-hdr {
+  display: flex; align-items: flex-start; padding: 13px 14px;
+  gap: 10px; cursor: pointer; border-left: 4px solid #A8C0C8;
+  border-radius: 14px 14px 0 0;
+}
+.trip-hdr-text { flex: 1; }
+.trip-name { font-size: 15px; color: #2B2B2B; }
+.trip-meta { font-size: 11px; color: #AAA; margin-top: 2px; }
+.trip-body { display: none; padding: 0 14px 12px; }
+.trip-body.open { display: block; }
+.new-section-card {
+  background: white; border-radius: 14px; padding: 14px;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06); margin-bottom: 12px;
+  border-left: 4px solid #A8C0C8;
+}
+.new-section-card h3 { font-size: 11px; color: #AAA; font-weight: normal; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+.full-input {
+  width: 100%; padding: 10px 13px; border-radius: 10px;
+  border: 1.5px solid #EEE; font-size: 14px; font-family: inherit;
+  color: #333; outline: none; margin-bottom: 8px; background: #FAFAFA;
+}
+.full-input:focus { border-color: #A8C0C8; background: white; }
+.primary-btn {
+  width: 100%; padding: 11px; border-radius: 10px;
+  background: #2B2B2B; color: white; border: none;
+  font-size: 14px; cursor: pointer; font-family: inherit; letter-spacing: 0.5px;
+}
+</style>
+</head>
+<body>
+
+<!-- ══ ROUTINE ══ -->
+<div id="page-routine" class="page active">
+  <div id="rtn-topbar">
+    <div class="rtn-toprow">
+      <div>
+        <div class="rtn-label">Weekly Routine</div>
+        <div class="rtn-date" id="rtn-date"></div>
+      </div>
+      <button id="rtn-new-btn" onclick="newWeek()">新的一周</button>
+    </div>
+    <div id="rtn-prog-wrap"><div id="rtn-prog-bar"></div></div>
+    <div id="rtn-prog-text"></div>
+    <div id="rtn-days"></div>
+  </div>
+  <div id="rtn-sections"></div>
+  <div class="footer-note">数据存在本机浏览器，不会丢失</div>
+</div>
+
+<!-- ══ INBOX ══ -->
+<div id="page-inbox" class="page">
+  <div class="page-header">
+    <h2>📥 Inbox</h2>
+    <div class="sub">想到什么就记，随时划掉</div>
+  </div>
+  <div class="page-content">
+    <div class="add-bar">
+      <input id="inbox-in" placeholder="记下来…" onkeydown="if(event.key==='Enter')addInbox()">
+      <button onclick="addInbox()">+</button>
+    </div>
+    <div id="inbox-active"></div>
+    <div id="inbox-done-wrap" style="display:none;">
+      <div class="divider-label">已完成</div>
+      <div id="inbox-done"></div>
+      <button class="ghost-btn" onclick="clearDoneInbox()">清除已完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHOPPING ══ -->
+<div id="page-shop" class="page">
+  <div class="page-header">
+    <h2>🛒 购物清单</h2>
+    <div class="sub">按超市分组，买完打勾</div>
+  </div>
+  <div class="page-content">
+    <div class="new-section-card" style="border-left-color:#C8B8A2;">
+      <h3>添加超市</h3>
+      <input class="full-input" id="store-in" placeholder="超市名称，如「全家」「超市」" onkeydown="if(event.key==='Enter')createStore()" style="border-color:#EEE;">
+      <button class="primary-btn" onclick="createStore()" style="background:#C8B8A2;">添加</button>
+    </div>
+    <div id="store-list"></div>
+  </div>
+</div>
+
+<!-- ══ PACKING ══ -->
+<div id="page-pack" class="page">
+  <div class="page-header">
+    <h2>🧳 行李清单</h2>
+    <div class="sub">每次出行独立清单，保留历史</div>
+  </div>
+  <div class="page-content">
+    <div class="new-section-card">
+      <h3>新建行程</h3>
+      <input class="full-input" id="trip-in" placeholder="行程名称，如「东京三天」" onkeydown="if(event.key==='Enter')createTrip()">
+      <button class="primary-btn" onclick="createTrip()">创建清单</button>
+    </div>
+    <div id="trip-list"></div>
+  </div>
+</div>
+
+<!-- ══ WORK NOTES ══ -->
+<div id="page-work" class="page">
+  <div class="page-header">
+    <h2>💼 工作备忘</h2>
+    <div class="sub">想到什么就记，随时划掉</div>
+  </div>
+  <div class="page-content">
+    <div class="add-bar">
+      <input id="work-in" placeholder="记下来…" onkeydown="if(event.key==='Enter')addWork()">
+      <button onclick="addWork()">+</button>
+    </div>
+    <div id="work-active"></div>
+    <div id="work-done-wrap" style="display:none;">
+      <div class="divider-label">已完成</div>
+      <div id="work-done"></div>
+      <button class="ghost-btn" onclick="clearDoneWork()">清除已完成</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 长期记录 ══ -->
+<div id="page-track" class="page">
+  <div class="page-header">
+    <h2>📅 长期记录</h2>
+    <div class="sub">永久保存，不随周重置</div>
+  </div>
+  <div class="page-content">
+    <div class="card" style="padding:14px;margin-bottom:14px;border-left:4px solid #9DBFB0;">
+      <div style="font-size:11px;color:#AAA;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">添加追踪项</div>
+      <input id="track-name-in" class="full-input" placeholder="事项名称，如「猫内驱虫」" style="border-color:#EEE;margin-bottom:8px;">
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="track-freq-in" class="full-input" placeholder="频率，如「每半年」" style="border-color:#EEE;margin:0;flex:1;">
+      </div>
+      <button class="primary-btn" onclick="addTrackItem()" style="background:#9DBFB0;">添加</button>
+    </div>
+    <div id="track-list"></div>
+  </div>
+</div>
+
+<!-- ══ NAV ══ -->
+<div id="bottom-nav">
+  <button class="nav-btn active" onclick="nav('routine',this)"><span class="nav-icon">📋</span><span class="nav-label">Routine</span></button>
+  <button class="nav-btn" onclick="nav('inbox',this)"><span class="nav-icon">📥</span><span class="nav-label">Inbox</span></button>
+  <button class="nav-btn" onclick="nav('work',this)"><span class="nav-icon">💼</span><span class="nav-label">工作</span></button>
+  <button class="nav-btn" onclick="nav('track',this)"><span class="nav-icon">📅</span><span class="nav-label">长期</span></button>
+  <button class="nav-btn" onclick="nav('shop',this)"><span class="nav-icon">🛒</span><span class="nav-label">购物</span></button>
+  <button class="nav-btn" onclick="nav('pack',this)"><span class="nav-icon">🧳</span><span class="nav-label">行李</span></button>
+</div>
+
+<script>
+// ── utils ──
+function nav(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  btn.classList.add('active'); window.scrollTo(0,0);
+}
+const ld=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch{return d;}};
+const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}};
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// ── ROUTINE ──
+const DAYS=["一","二","三","四","五","六","日"];
+const SECS=[
+  {id:"braces",emoji:"🦷",title:"牙套",ac:"#B5C8D8",items:[
+    {id:"rs",label:"洁牙片泡牙套",freq:"周一",type:"s"}]},
+  {id:"cat",emoji:"🐈",title:"猫",ac:"#D4A96A",items:[
+    {id:"cg",label:"梳毛 · 除毛零食 · 刷牙",freq:"每3天",type:"m"}]},
+  {id:"sk",emoji:"🫧",title:"护肤",ac:"#C4A8C8",items:[
+    {id:"sm",label:"贴片面膜",freq:"×2",type:"m"},
+    {id:"vm",label:"Versed 面膜",freq:"×2",type:"m"},
+    {id:"cv",label:"鱼子酱精华",freq:"≥2次",type:"m"},
+    {id:"rt",label:"A醇",freq:"≥3次",type:"m"},
+    {id:"sa",label:"水杨酸片",freq:"按情况",type:"s"}]},
+  {id:"hr",emoji:"🌿",title:"护发",ac:"#8DB09A",items:[
+    {id:"hw",label:"护发素梳头 · 包头",freq:"洗头时",type:"s"},
+    {id:"ho",label:"精油 · 头皮精油",freq:"洗头时",type:"s"}]},
+  {id:"hm",emoji:"🏠",title:"卫生",ac:"#C8B8A2",items:[
+    {id:"mp",label:"洗地",freq:"每周",type:"s"},
+    {id:"lt",label:"换猫砂垃圾袋",freq:"每周",type:"s"},
+    {id:"vc",label:"吸尘 / 开机器人",freq:"每周",type:"s"},
+    {id:"tr",label:"丢垃圾 · 拿信",freq:"每周",type:"s"}]},
+  {id:"ft",emoji:"🏃",title:"健身",ac:"#A8C0C8",items:[
+    {id:"st",label:"力量训练",freq:"≥1次",type:"m"},
+    {id:"yg",label:"瑜伽",freq:"≥1次",type:"m"},
+    {id:"cd2",label:"有氧",freq:"≥1次",type:"m"}]},
+];
+const getWk=()=>{const n=new Date(),d=n.getDay(),m=new Date(n);m.setDate(n.getDate()-((d+6)%7));return m.toISOString().slice(0,10);};
+const tIdx=()=>(new Date().getDay()+6)%7;
+const fmtWk=w=>{const d=new Date(w),e=new Date(d);e.setDate(d.getDate()+6);return`${d.getMonth()+1}月${d.getDate()}日 — ${e.getMonth()+1}月${e.getDate()}日`;};
+let rC={},rO={};
+const loadR=()=>{const d=ld('gtd_r2',{});rC=d.wk===getWk()?d.c||{}:{};rO=ld('gtd_ro2',{});};
+const saveR=()=>{sv('gtd_r2',{wk:getWk(),c:rC});sv('gtd_ro2',rO);};
+const cntM=id=>Array.from({length:7},(_,i)=>rC[`${id}_${i}`]).filter(Boolean).length;
+const isDone=it=>it.type==='m'?cntM(it.id)>0:!!rC[it.id];
+function newWeek(){if(!confirm('开始新的一周？本周记录将清除。'))return;rC={};saveR();renderR();}
+function renderR(){
+  const ti=tIdx();
+  document.getElementById('rtn-date').textContent=fmtWk(getWk());
+  document.getElementById('rtn-days').innerHTML=DAYS.map((d,i)=>`<div class="day-pill ${i===ti?'today':''}">${d}</div>`).join('');
+  const tot=SECS.reduce((s,sec)=>s+sec.items.length,0);
+  const dn=SECS.reduce((s,sec)=>s+sec.items.filter(isDone).length,0);
+  document.getElementById('rtn-prog-bar').style.width=`${(dn/tot)*100}%`;
+  document.getElementById('rtn-prog-text').textContent=`${dn} / ${tot} 完成`;
+  const con=document.getElementById('rtn-sections');con.innerHTML='';
+  SECS.forEach(sec=>{
+    const sd=sec.items.filter(isDone).length,full=sd===sec.items.length&&sec.items.length>0,op=!!rO[sec.id];
+    const card=document.createElement('div');card.className='sec-card';card.style.border=`1px solid ${sec.ac}44`;
+    const hdr=document.createElement('button');hdr.className='sec-hdr';hdr.style.borderLeftColor=sec.ac;
+    hdr.innerHTML=`<span class="sec-emoji">${sec.emoji}</span><span class="sec-title">${sec.title}</span><span class="sec-badge ${full?'full':''}" style="${full?'background:'+sec.ac:''}">${sd}/${sec.items.length}</span><span style="color:#CCC;font-size:11px;margin-left:2px;">${op?'▲':'▼'}</span>`;
+    hdr.onclick=()=>{rO[sec.id]=!rO[sec.id];saveR();renderR();};
+    card.appendChild(hdr);
+    const body=document.createElement('div');body.className=`sec-body${op?' open':''}`;
+    sec.items.forEach(it=>{
+      const dn2=isDone(it),cnt=it.type==='m'?cntM(it.id):0;
+      const row=document.createElement('div');row.className='rtn-item';
+      const top=document.createElement('div');top.className=`rtn-top${it.type==='m'?' has-days':''}`;
+      if(it.type==='s'){
+        const bx=document.createElement('button');bx.className='rtn-check';
+        bx.style.borderColor=dn2?sec.ac:'#DDD';bx.style.background=dn2?sec.ac:'white';
+        bx.textContent=dn2?'✓':'';
+        bx.onclick=()=>{rC[it.id]=!rC[it.id];saveR();renderR();};
+        top.appendChild(bx);
+      }
+      const lb=document.createElement('span');lb.className=`rtn-lbl${dn2&&it.type==='s'?' done':''}`;lb.textContent=it.label;top.appendChild(lb);
+      const fq=document.createElement('span');fq.className='rtn-freq';fq.style.color=sec.ac;
+      fq.textContent=it.type==='m'?`${cnt}次 · ${it.freq}`:it.freq;top.appendChild(fq);row.appendChild(top);
+      if(it.type==='m'){
+        const db=document.createElement('div');db.className='day-btns';
+        DAYS.forEach((d,i)=>{
+          const ck=!!rC[`${it.id}_${i}`],isT=i===ti;
+          const b=document.createElement('button');b.className='day-btn';
+          b.style.borderColor=ck?sec.ac:isT?sec.ac+'77':'#EEE';
+          b.style.background=ck?sec.ac:isT?sec.ac+'18':'#FAFAFA';
+          b.style.color=ck?'white':isT?sec.ac:'#C0C0C0';
+          if(isT)b.style.fontWeight='bold';
+          b.textContent=d;b.onclick=()=>{rC[`${it.id}_${i}`]=!rC[`${it.id}_${i}`];saveR();renderR();};
+          db.appendChild(b);
+        });row.appendChild(db);
+      }
+      body.appendChild(row);
+    });
+    card.appendChild(body);con.appendChild(card);
+  });
+}
+
+// ── INBOX ──
+let inbox=[];
+const loadInbox=()=>{inbox=ld('gtd_inbox2',[]);};
+const saveInbox=()=>sv('gtd_inbox2',inbox);
+function addInbox(){
+  const inp=document.getElementById('inbox-in'),t=inp.value.trim();if(!t)return;
+  inbox.unshift({id:Date.now(),text:t,done:false});inp.value='';saveInbox();renderInbox();
+  inp.focus();
+}
+function togInbox(id){const it=inbox.find(i=>i.id===id);if(it){it.done=!it.done;saveInbox();renderInbox();}}
+function delInbox(id){inbox=inbox.filter(i=>i.id!==id);saveInbox();renderInbox();}
+function clearDoneInbox(){inbox=inbox.filter(i=>!i.done);saveInbox();renderInbox();}
+function renderInbox(){
+  const act=inbox.filter(i=>!i.done),dn=inbox.filter(i=>i.done);
+  const mkRow=(it,isDn)=>`
+    <div class="row-item">
+      <button class="tick" style="border-color:${isDn?'#C4A8C8':'#DDD'};background:${isDn?'#C4A8C8':'white'};color:white;" onclick="togInbox(${it.id})">${isDn?'✓':''}</button>
+      <span class="row-text ${isDn?'done':''}">${esc(it.text)}</span>
+      <button class="x-btn" onclick="delInbox(${it.id})">✕</button>
+    </div>`;
+  const aEl=document.getElementById('inbox-active');
+  aEl.innerHTML=act.length?`<div class="card">${act.map(i=>mkRow(i,false)).join('')}</div>`:`<div class="empty-msg">空空如也 ✨</div>`;
+  const dw=document.getElementById('inbox-done-wrap');
+  if(dn.length){
+    dw.style.display='block';
+    document.getElementById('inbox-done').innerHTML=`<div class="card">${dn.map(i=>mkRow(i,true)).join('')}</div>`;
+  } else dw.style.display='none';
+}
+
+// ── SHOPPING ──
+let stores=[];let sOpen={};
+const loadShop=()=>{stores=ld('gtd_stores',[]);sOpen=ld('gtd_sopen',{});};
+const saveShop=()=>{sv('gtd_stores',stores);sv('gtd_sopen',sOpen);};
+function createStore(){
+  const inp=document.getElementById('store-in'),name=inp.value.trim();if(!name)return;
+  const id=Date.now();
+  stores.unshift({id,name,items:[]});
+  sOpen[id]=true;inp.value='';saveShop();renderShop();
+}
+function delStore(id){if(!confirm('删除这个超市清单？'))return;stores=stores.filter(s=>s.id!==id);delete sOpen[id];saveShop();renderShop();}
+function addShopItem(sid){
+  const inp=document.getElementById(`shi-${sid}`),t=inp.value.trim();if(!t)return;
+  const s=stores.find(s=>s.id===sid);if(s)s.items.push({id:Date.now(),text:t,done:false});
+  inp.value='';saveShop();renderShop();
+}
+function togShop(sid,iid){
+  const s=stores.find(s=>s.id===sid);
+  if(s){const it=s.items.find(i=>i.id===iid);if(it)it.done=!it.done;}
+  saveShop();renderShop();
+}
+function delShopItem(sid,iid){
+  const s=stores.find(s=>s.id===sid);if(s)s.items=s.items.filter(i=>i.id!==iid);
+  saveShop();renderShop();
+}
+function clearDoneShop(sid){
+  const s=stores.find(s=>s.id===sid);if(s)s.items=s.items.filter(i=>!i.done);
+  saveShop();renderShop();
+}
+function togStore(id){sOpen[id]=!sOpen[id];saveShop();renderShop();}
+function renderShop(){
+  const list=document.getElementById('store-list');
+  if(!stores.length){list.innerHTML=`<div class="empty-msg">先添加一个超市 🛒</div>`;return;}
+  list.innerHTML=stores.map(s=>{
+    const rem=s.items.filter(i=>!i.done).length,op=!!sOpen[s.id];
+    const hasDone=s.items.some(i=>i.done);
+    return`<div class="card" style="border:1px solid #C8B8A244;margin-bottom:12px;">
+      <div class="trip-hdr" style="border-left-color:#C8B8A2;" onclick="togStore(${s.id})">
+        <span style="font-size:20px;">🛒</span>
+        <div class="trip-hdr-text">
+          <div class="trip-name">${esc(s.name)}</div>
+          <div class="trip-meta">${rem > 0 ? rem+'项待买' : s.items.length ? '全部买完 ✓' : '空清单'}</div>
+        </div>
+        <button class="x-btn" onclick="event.stopPropagation();delStore(${s.id})">🗑</button>
+        <span style="color:#CCC;font-size:11px;">${op?'▲':'▼'}</span>
+      </div>
+      ${op?`<div class="trip-body open">
+        ${s.items.map(it=>`
+          <div class="row-item">
+            <button class="tick" style="border-color:${it.done?'#C8B8A2':'#DDD'};background:${it.done?'#C8B8A2':'white'};color:white;" onclick="togShop(${s.id},${it.id})">${it.done?'✓':''}</button>
+            <span class="row-text ${it.done?'done':''}">${esc(it.text)}</span>
+            <button class="x-btn" onclick="delShopItem(${s.id},${it.id})">✕</button>
+          </div>`).join('')}
+        <div class="add-bar" style="margin:10px 0 2px;">
+          <input id="shi-${s.id}" placeholder="添加商品…" onkeydown="if(event.key==='Enter')addShopItem(${s.id})" style="flex:1;padding:9px 12px;border-radius:9px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;">
+          <button onclick="addShopItem(${s.id})" style="padding:9px 14px;border-radius:9px;background:#C8B8A2;color:white;border:none;font-size:18px;cursor:pointer;">+</button>
+        </div>
+        ${hasDone?`<button class="ghost-btn" style="margin-top:4px;" onclick="clearDoneShop(${s.id})">清除已买</button>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── PACKING ──
+let trips=[];let tOpen={};
+const loadPack=()=>{trips=ld('gtd_pack2',[]);tOpen=ld('gtd_topen2',{});};
+const savePack=()=>{sv('gtd_pack2',trips);sv('gtd_topen2',tOpen);};
+function createTrip(){
+  const inp=document.getElementById('trip-in'),name=inp.value.trim();if(!name)return;
+  const id=Date.now();
+  trips.unshift({id,name,items:[],created:new Date().toLocaleDateString('zh-CN',{month:'numeric',day:'numeric'})});
+  tOpen[id]=true;inp.value='';savePack();renderPack();
+}
+function delTrip(id){if(!confirm('删除这个行程清单？'))return;trips=trips.filter(t=>t.id!==id);delete tOpen[id];savePack();renderPack();}
+function addPackItem(tid){
+  const inp=document.getElementById(`pi-${tid}`),t=inp.value.trim();if(!t)return;
+  const trip=trips.find(t=>t.id===tid);if(trip)trip.items.push({id:Date.now(),text:t,done:false});
+  inp.value='';savePack();renderPack();
+}
+function togPack(tid,iid){
+  const trip=trips.find(t=>t.id===tid);
+  if(trip){const it=trip.items.find(i=>i.id===iid);if(it)it.done=!it.done;}
+  savePack();renderPack();
+}
+function delPackItem(tid,iid){
+  const trip=trips.find(t=>t.id===tid);if(trip)trip.items=trip.items.filter(i=>i.id!==iid);
+  savePack();renderPack();
+}
+function togTrip(id){tOpen[id]=!tOpen[id];savePack();renderPack();}
+function renderPack(){
+  const list=document.getElementById('trip-list');
+  if(!trips.length){list.innerHTML=`<div class="empty-msg">还没有行程 ✈️</div>`;return;}
+  list.innerHTML=trips.map(trip=>{
+    const rem=trip.items.filter(i=>!i.done).length,op=!!tOpen[trip.id];
+    return`<div class="card" style="border:1px solid #A8C0C844;margin-bottom:12px;">
+      <div class="trip-hdr" onclick="togTrip(${trip.id})">
+        <span style="font-size:20px;">✈️</span>
+        <div class="trip-hdr-text">
+          <div class="trip-name">${esc(trip.name)}</div>
+          <div class="trip-meta">${trip.created} · ${rem > 0 ? rem+'项未打包' : '全部打包 ✓'}</div>
+        </div>
+        <button class="x-btn" onclick="event.stopPropagation();delTrip(${trip.id})">🗑</button>
+        <span style="color:#CCC;font-size:11px;">${op?'▲':'▼'}</span>
+      </div>
+      ${op?`<div class="trip-body open">
+        ${trip.items.map(it=>`
+          <div class="row-item">
+            <button class="tick" style="border-color:${it.done?'#A8C0C8':'#DDD'};background:${it.done?'#A8C0C8':'white'};color:white;" onclick="togPack(${trip.id},${it.id})">${it.done?'✓':''}</button>
+            <span class="row-text ${it.done?'done':''}">${esc(it.text)}</span>
+            <button class="x-btn" onclick="delPackItem(${trip.id},${it.id})">✕</button>
+          </div>`).join('')}
+        <div class="add-bar" style="margin:10px 0 2px;">
+          <input id="pi-${trip.id}" placeholder="添加物品…" onkeydown="if(event.key==='Enter')addPackItem(${trip.id})" style="flex:1;padding:9px 12px;border-radius:9px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;">
+          <button onclick="addPackItem(${trip.id})" style="padding:9px 14px;border-radius:9px;background:#A8C0C8;color:white;border:none;font-size:18px;cursor:pointer;">+</button>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ── WORK NOTES ──
+let workNotes=[];
+const loadWork=()=>{workNotes=ld('gtd_work',[]);};
+const saveWork=()=>sv('gtd_work',workNotes);
+function addWork(){
+  const inp=document.getElementById('work-in'),t=inp.value.trim();if(!t)return;
+  workNotes.unshift({id:Date.now(),text:t,done:false});inp.value='';saveWork();renderWork();inp.focus();
+}
+function togWork(id){const it=workNotes.find(i=>i.id===id);if(it){it.done=!it.done;saveWork();renderWork();}}
+function delWork(id){workNotes=workNotes.filter(i=>i.id!==id);saveWork();renderWork();}
+function clearDoneWork(){workNotes=workNotes.filter(i=>!i.done);saveWork();renderWork();}
+function renderWork(){
+  const act=workNotes.filter(i=>!i.done),dn=workNotes.filter(i=>i.done);
+  const mkRow=(it,isDn)=>`
+    <div class="row-item">
+      <button class="tick" style="border-color:${isDn?'#A8C0C8':'#DDD'};background:${isDn?'#A8C0C8':'white'};color:white;" onclick="togWork(${it.id})">${isDn?'✓':''}</button>
+      <span class="row-text ${isDn?'done':''}">${esc(it.text)}</span>
+      <button class="x-btn" onclick="delWork(${it.id})">✕</button>
+    </div>`;
+  const aEl=document.getElementById('work-active');
+  aEl.innerHTML=act.length?`<div class="card">${act.map(i=>mkRow(i,false)).join('')}</div>`:`<div class="empty-msg">空空如也 💼</div>`;
+  const dw=document.getElementById('work-done-wrap');
+  if(dn.length){
+    dw.style.display='block';
+    document.getElementById('work-done').innerHTML=`<div class="card">${dn.map(i=>mkRow(i,true)).join('')}</div>`;
+  } else dw.style.display='none';
+}
+
+// ── LONG-TERM TRACKER ──
+let trackItems=[];
+const loadTrack=()=>{trackItems=ld('gtd_track',[]);};
+const saveTrack=()=>sv('gtd_track',trackItems);
+function addTrackItem(){
+  const nameInp=document.getElementById('track-name-in');
+  const freqInp=document.getElementById('track-freq-in');
+  const name=nameInp.value.trim();if(!name)return;
+  const freq=freqInp.value.trim();
+  trackItems.unshift({id:Date.now(),name,freq,lastDate:'',note:''});
+  nameInp.value='';freqInp.value='';saveTrack();renderTrack();
+}
+function saveTrackDate(id){
+  const inp=document.getElementById(`td-${id}`),val=inp.value.trim();if(!val)return;
+  const it=trackItems.find(i=>i.id===id);if(it){it.lastDate=val;}
+  saveTrack();renderTrack();
+}
+function clearTrackDate(id){
+  const it=trackItems.find(i=>i.id===id);if(it)it.lastDate='';
+  saveTrack();renderTrack();
+}
+function saveTrackNote(id){
+  const inp=document.getElementById(`tn-${id}`),val=inp.value.trim();
+  const it=trackItems.find(i=>i.id===id);if(it)it.note=val;
+  saveTrack();
+}
+function delTrackItem(id){
+  if(!confirm('删除这个追踪项？'))return;
+  trackItems=trackItems.filter(i=>i.id!==id);saveTrack();renderTrack();
+}
+function renderTrack(){
+  const list=document.getElementById('track-list');
+  if(!trackItems.length){list.innerHTML=`<div class="empty-msg">还没有追踪项 📅</div>`;return;}
+  list.innerHTML=trackItems.map(it=>`
+    <div class="card" style="border:1px solid #9DBFB044;margin-bottom:10px;padding:14px;">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
+        <div style="flex:1;">
+          <div style="font-size:15px;color:#2B2B2B;">${esc(it.name)}</div>
+          ${it.freq?`<div style="font-size:11px;color:#9DBFB0;margin-top:2px;">${esc(it.freq)}</div>`:''}
+        </div>
+        <button class="x-btn" onclick="delTrackItem(${it.id})">🗑</button>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="font-size:11px;color:#AAA;margin-bottom:5px;letter-spacing:0.5px;">上次时间</div>
+        ${it.lastDate
+          ? `<div style="display:flex;align-items:center;gap:8px;">
+               <span style="font-size:14px;color:#9DBFB0;font-weight:bold;">${esc(it.lastDate)}</span>
+               <button onclick="clearTrackDate(${it.id})" style="background:none;border:none;color:#CCC;font-size:12px;cursor:pointer;padding:0;">✕ 修改</button>
+             </div>`
+          : `<div style="display:flex;gap:8px;">
+               <input id="td-${it.id}" type="text" placeholder="输入日期，如 2025/3/14"
+                 style="flex:1;padding:7px 11px;border-radius:8px;border:1.5px solid #DDD;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;"
+                 onkeydown="if(event.key==='Enter')saveTrackDate(${it.id})">
+               <button onclick="saveTrackDate(${it.id})" style="padding:7px 13px;border-radius:8px;background:#9DBFB0;color:white;border:none;font-size:13px;cursor:pointer;font-family:inherit;">记录</button>
+             </div>`
+        }
+      </div>
+      <div>
+        <div style="font-size:11px;color:#AAA;margin-bottom:5px;letter-spacing:0.5px;">备注</div>
+        <input id="tn-${it.id}" type="text" placeholder="可选备注…" value="${esc(it.note||'')}"
+          style="width:100%;padding:7px 11px;border-radius:8px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;"
+          onblur="saveTrackNote(${it.id})">
+      </div>
+    </div>`).join('');
+}
+
+// ── INIT ──
+loadR(); renderR();
+loadInbox(); renderInbox();
+loadWork(); renderWork();
+loadTrack(); renderTrack();
+loadShop(); renderShop();
+loadPack(); renderPack();
+</script>
+</body>
+</html>
