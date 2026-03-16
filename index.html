@@ -582,64 +582,67 @@ function renderWork(){
 let trackItems=[];
 const loadTrack=()=>{trackItems=ld('gtd_track',[]);};
 const saveTrack=()=>sv('gtd_track',trackItems);
+
 function addTrackItem(){
   const nameInp=document.getElementById('track-name-in');
   const freqInp=document.getElementById('track-freq-in');
   const name=nameInp.value.trim();if(!name)return;
   const freq=freqInp.value.trim();
-  trackItems.unshift({id:Date.now(),name,freq,lastDate:'',note:''});
+  trackItems.unshift({id:Date.now(),name,freq,logs:[]});
   nameInp.value='';freqInp.value='';saveTrack();renderTrack();
-}
-function saveTrackDate(id){
-  const inp=document.getElementById(`td-${id}`),val=inp.value.trim();if(!val)return;
-  const it=trackItems.find(i=>i.id===id);if(it){it.lastDate=val;}
-  saveTrack();renderTrack();
-}
-function clearTrackDate(id){
-  const it=trackItems.find(i=>i.id===id);if(it)it.lastDate='';
-  saveTrack();renderTrack();
-}
-function saveTrackNote(id){
-  const inp=document.getElementById(`tn-${id}`),val=inp.value.trim();
-  const it=trackItems.find(i=>i.id===id);if(it)it.note=val;
-  saveTrack();
 }
 function delTrackItem(id){
   if(!confirm('删除这个追踪项？'))return;
   trackItems=trackItems.filter(i=>i.id!==id);saveTrack();renderTrack();
 }
+function addTrackLog(itemId){
+  const dateInp=document.getElementById(`tld-${itemId}`);
+  const noteInp=document.getElementById(`tln-${itemId}`);
+  const date=dateInp.value.trim();if(!date)return;
+  const note=noteInp.value.trim();
+  const it=trackItems.find(i=>i.id===itemId);
+  if(it){it.logs.unshift({id:Date.now(),date,note});}
+  dateInp.value='';noteInp.value='';saveTrack();renderTrack();
+}
+function delTrackLog(itemId,logId){
+  const it=trackItems.find(i=>i.id===itemId);
+  if(it)it.logs=it.logs.filter(l=>l.id!==logId);
+  saveTrack();renderTrack();
+}
 function renderTrack(){
   const list=document.getElementById('track-list');
   if(!trackItems.length){list.innerHTML=`<div class="empty-msg">还没有追踪项 📅</div>`;return;}
   list.innerHTML=trackItems.map(it=>`
-    <div class="card" style="border:1px solid #9DBFB044;margin-bottom:10px;padding:14px;">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;">
+    <div class="card" style="border:1px solid #9DBFB044;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;gap:8px;padding:13px 14px;border-bottom:1px solid #F5F5F5;">
         <div style="flex:1;">
           <div style="font-size:15px;color:#2B2B2B;">${esc(it.name)}</div>
           ${it.freq?`<div style="font-size:11px;color:#9DBFB0;margin-top:2px;">${esc(it.freq)}</div>`:''}
         </div>
         <button class="x-btn" onclick="delTrackItem(${it.id})">🗑</button>
       </div>
-      <div style="margin-bottom:8px;">
-        <div style="font-size:11px;color:#AAA;margin-bottom:5px;letter-spacing:0.5px;">上次时间</div>
-        ${it.lastDate
-          ? `<div style="display:flex;align-items:center;gap:8px;">
-               <span style="font-size:14px;color:#9DBFB0;font-weight:bold;">${esc(it.lastDate)}</span>
-               <button onclick="clearTrackDate(${it.id})" style="background:none;border:none;color:#CCC;font-size:12px;cursor:pointer;padding:0;">✕ 修改</button>
-             </div>`
-          : `<div style="display:flex;gap:8px;">
-               <input id="td-${it.id}" type="text" placeholder="输入日期，如 2025/3/14"
-                 style="flex:1;padding:7px 11px;border-radius:8px;border:1.5px solid #DDD;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;"
-                 onkeydown="if(event.key==='Enter')saveTrackDate(${it.id})">
-               <button onclick="saveTrackDate(${it.id})" style="padding:7px 13px;border-radius:8px;background:#9DBFB0;color:white;border:none;font-size:13px;cursor:pointer;font-family:inherit;">记录</button>
-             </div>`
-        }
-      </div>
-      <div>
-        <div style="font-size:11px;color:#AAA;margin-bottom:5px;letter-spacing:0.5px;">备注</div>
-        <input id="tn-${it.id}" type="text" placeholder="可选备注…" value="${esc(it.note||'')}"
+      ${it.logs.length?`
+        <div style="padding:0 14px;">
+          ${it.logs.map((log,idx)=>`
+            <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #F9F9F9;">
+              <div style="width:8px;height:8px;border-radius:50%;background:${idx===0?'#9DBFB0':'#DDD'};margin-top:5px;flex-shrink:0;"></div>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:#2B2B2B;font-weight:${idx===0?'bold':'normal'};">${esc(log.date)}</div>
+                ${log.note?`<div style="font-size:12px;color:#AAA;margin-top:2px;">${esc(log.note)}</div>`:''}
+              </div>
+              <button class="x-btn" style="font-size:13px;" onclick="delTrackLog(${it.id},${log.id})">✕</button>
+            </div>`).join('')}
+        </div>`:''}
+      <div style="padding:10px 14px 12px;">
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+          <input id="tld-${it.id}" type="text" placeholder="日期，如 2025/3/14"
+            style="flex:1;padding:7px 11px;border-radius:8px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;"
+            onkeydown="if(event.key==='Enter')document.getElementById('tln-${it.id}').focus()">
+          <button onclick="addTrackLog(${it.id})" style="padding:7px 13px;border-radius:8px;background:#9DBFB0;color:white;border:none;font-size:13px;cursor:pointer;white-space:nowrap;">+ 记录</button>
+        </div>
+        <input id="tln-${it.id}" type="text" placeholder="备注（可选）"
           style="width:100%;padding:7px 11px;border-radius:8px;border:1.5px solid #EEE;font-size:13px;font-family:inherit;color:#333;outline:none;background:#FAFAFA;"
-          onblur="saveTrackNote(${it.id})">
+          onkeydown="if(event.key==='Enter')addTrackLog(${it.id})">
       </div>
     </div>`).join('');
 }
